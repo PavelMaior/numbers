@@ -1,0 +1,49 @@
+version: "3"
+
+services:
+  db:
+    image: postgres:13.7
+    privileged: true
+    restart: always
+    ports:
+      - "54325:5432"
+    environment:
+      POSTGRES_DB: catalog
+      POSTGRES_USER: nekr
+      POSTGRES_PASSWORD: qwerty
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    volumes:
+      - .:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./ordersAPI
+    privileged: true
+    restart: always
+    expose:
+      - 8000
+    command: bash -c "
+      python manage.py migrate &&
+      gunicorn ordersAPI.wsgi -b 0.0.0.0:8000
+      "
+    environment:
+      DJANGO_SETTINGS_MODULE: ordersAPI.settings_prod
+    depends_on:
+      - db
+
+  nginx:
+    build:
+      context: ./nginx
+    ports:
+      - "8002:8002"
+
+  script:
+    build:
+      context: ./OrdersChecker
+    ports:
+      - "8004:8004"
+    command: bash -c "
+      python order_checker.py
+      "
+    depends_on:
+      - backend
