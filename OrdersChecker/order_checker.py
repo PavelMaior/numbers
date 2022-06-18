@@ -28,7 +28,7 @@ class OrderChecker:
     telegram_channel = '@orders_check_channel'  # Telegram-чат для отправки уведомлений
 
     recent_sending_id = tuple()  # кортеж недавних успешных запросов
-    update_period = timedelta(hours=1)  # периоичность обновления курса доллара и сброса кортежа недавних запросов
+    update_period = timedelta(minutes=5)  # периоичность обновления курса доллара и сброса кортежа недавних запросов
 
     def __init__(self, file_path=None, sheet_id=None):
         if file_path:  # установка имени json файла для авторизациив googleapi
