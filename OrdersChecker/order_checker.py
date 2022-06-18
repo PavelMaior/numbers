@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 import time
@@ -42,6 +41,7 @@ class OrderChecker:
         self.time_to_update = datetime.now() + self.update_period
         self.rub_to_usd = self.get_rub_to_usd()
         self.db_connection = self.get_db_connection()
+        self.bot = telebot.TeleBot(self.bot_id)
 
     @staticmethod
     def get_rub_to_usd():
@@ -95,12 +95,11 @@ class OrderChecker:
                     "Ошибка при подключении к PostgreSQL",
                     error
                 )
-                time.sleep(2)
+                time.sleep(10)
 
     def send_order_db(self, order):
         try:
-            if not self.db_connection:
-                self.db_connection = self.get_db_connection()
+            self.db_connection = self.get_db_connection()
             self.cursor = self.db_connection.cursor()
 
             insert_query = """INSERT INTO ordersapp_order (id, usd_price, rub_price, delivery_date) VALUES (%s,%s,%s,%s)"""
@@ -112,6 +111,7 @@ class OrderChecker:
             if hasattr(error, 'pgcode'):
                 return error.pgcode
             else:
+                logging.warning('НЕКОРРЕКТНОЕ добавление в базу')
                 return error
         finally:
             if self.db_connection:
@@ -119,22 +119,21 @@ class OrderChecker:
                 self.db_connection.close()
 
     def send_prepared_data(self, prepared_data):
-        if not self.db_connection:
-            self.db_connection = self.get_db_connection()
         for order in prepared_data:
             if order[0] not in self.recent_sending_id:
-                answer = self.send_order_db(order)
-                if answer == 1:
+                result_of_sending = self.send_order_db(order)
+                if result_of_sending == 1:
                     self.check_delivery_time(order)
                     self.recent_sending_id += (order[0],)
-                elif answer == '23505':
+                    logging.warning('УСПЕШНОЕ добавление в базу')
+                elif result_of_sending == '23505':
+                    logging.warning('ПОВТОРНОЕ добавление в базу')
                     self.recent_sending_id += (order[0],)
 
     def check_delivery_time(self, order):
         delivery_date = datetime.strptime(order[3], '%Y-%m-%d')
         if datetime.now() >= delivery_date:
-            bot = telebot.TeleBot(self.bot_id)
-            bot.send_message(
+            self.bot.send_message(
                 self.telegram_channel,
                 f'Срок поставки заказа № {order[0]} истек!')
 
@@ -180,12 +179,21 @@ class OrderChecker:
 if __name__ == '__main__':
     while True:
         try:
-            ocheck = OrderChecker()
-            ocheck.run()
+            logging.warning(
+                f'Прозваниваю базу через бэк  {os.path.abspath(__file__)}'
+            )
+            answer = requests.get('http://nginx:8002/api/orders/')
+            if answer.status_code == 200:
+                logging.info(
+                    'Дозвонился, запускаю проверятель'
+                )
+                ocheck = OrderChecker()
+                ocheck.run()
+            else:
+                time.sleep(2)
         except Exception as error:
             logging.warning(
-                "Ошибка при работе скрипта",
+                "Ошибка на старте",
                 error
             )
-            time.sleep(2)
 
