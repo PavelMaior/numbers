@@ -36,6 +36,8 @@ services:
       context: ./nginx
     ports:
       - "8002:8002"
+    depends_on:
+      - backend
 
   script:
     build:
@@ -46,4 +48,6 @@ services:
       python order_checker.py
       "
     depends_on:
+      - nginx
+      - db
       - backend

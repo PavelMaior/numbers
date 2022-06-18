@@ -56,7 +56,7 @@ ROOT_URLCONF = 'ordersAPI.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR/'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -82,16 +82,6 @@ DATABASES = {
     }
 }
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-#         'NAME': 'catalog',
-#         'USER': 'nekr',
-#         'PASSWORD': 'qwerty',
-#         'HOST': 'db',
-#         'PORT': '5432',
-#     }
-# }
 
 
 # Password validation
@@ -130,6 +120,7 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / '..' / 'nginx' / 'static'
+STATICFILES_DIRS = [BASE_DIR / 'templates']
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
